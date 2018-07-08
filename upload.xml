@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="HelloWorld" default="run">
+
+
+    <target name="def.teivol" if="var.teivol">
+		<property name="remote.ssh.rsa" value="~/.ssh/client_rsa" />
+		<property name="remote.ssh.host" value="www.teikoku-vol.com" />
+		<property name="remote.ssh.port" value="2222" />
+		<property name="remote.dir" value="/home/osama/social_run/" />
+		<property name="usern" value="osama" />
+		<input message="input passphrase" addproperty="phrase" />
+	</target>
+	<target name="def.macmini2" if="var.macmini2">
+		<property name="remote.ssh.host" value="macmini2.isl.local" />
+		<property name="remote.ssh.port" value="22" />
+		<property name="remote.dir" value="/Users/k.osaka/social_run/" />
+		<property name="usern" value="k.osaka" />
+		<property name="phrase" value="ken1969" />
+        <echo message="this is macmini2"/>
+	</target>
+
+
+
+	<!-- input param -->
+	<target name="input">
+		<input message="target? 1=www.teikoku-vol 2=macmini2 (1/2)"
+			validargs="1,2" addproperty="var.num" />
+		<condition property="var.teivol">
+			<equals arg1="${var.num}" arg2="1" />
+		</condition>
+		<condition property="var.macmini2">
+			<equals arg1="${var.num}" arg2="2" />
+		</condition>
+	</target>
+
+
+	<!-- clean the project -->
+	<target name="clean">
+		<sshexec host="${remote.ssh.host}" port="${remote.ssh.port}"
+			username="${usern}" password="${phrase}" passphrase="${phrase}"
+			command="cd ${remote.dir} &amp;&amp; rm -r bin src || true" trust="yes" />
+	</target>
+
+	<!-- run the program -->
+	<target name="run" depends="input,def.teivol,def.macmini2,upload">
+		<sshexec host="${remote.ssh.host}" port="${remote.ssh.port}"
+			username="${usern}" password="${phrase}" passphrase="${phrase}"
+			command="cd ${remote.dir} &amp;&amp;  ./run.sh" trust="yes" />
+	</target>
+
+	<!-- send the jar file to a remote server -->
+	<target name="upload" depends="clean">
+		<scp todir="${usern}@${remote.ssh.host}:${remote.dir}" port="${remote.ssh.port}"
+			trust="true" password="${phrase}">
+			<fileset dir=".">
+				<exclude name="result/**" />
+				<exclude name="bin/**" />
+			</fileset>
+		</scp>
+		<sshexec host="${remote.ssh.host}" port="${remote.ssh.port}"
+			username="${usern}" password="${phrase}"
+			command="cd ${remote.dir} &amp;&amp; chmod 744 run.sh" trust="yes" />
+	</target>
+
+</project>
