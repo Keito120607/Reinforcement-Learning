@@ -11,7 +11,6 @@ public class Agent implements Cloneable{
 	private BitArray V;//裏切り者を懲罰する確率
 	private BitArray L;//協調を褒賞する確率
 	public double score;
-	public static final MAX = 1000000;
 
 	//logスケール用score記憶 2016/11/08
 //	public double Fscore;
@@ -31,29 +30,8 @@ public class Agent implements Cloneable{
 
 
 
-	public static final MAX = 1000000;
-
-	//強化学習におけるQ値=記事投稿数、コメント数、もらったコメント数
-	public double[][][] Q = new double[MAX][MAX][MAX];
-
-	public int[] act = new int[2];
-	act ={0,0};//行動決定(0→しない、1→する)0で初期化
-
-	public static final double a,b,c,d;//強化学習においてQ値の更新をする際に必要な定数(仮)
-
-	public int learningMax;	//最大学習回数
-	public double gammaRate;//割引率
-	public double learningRate;//学習率
-	public double epsilonRate;//ε
-	public int step;//ステップ数
-	public int learningCnt;//学習回数
-	public int nowR;//即時報酬
-
-
-
-
-	//public double parents_count;	//親に選ばれた回数を記録
-	//public int mutation_count; //突然変異が起こった回数
+	public double parents_count;	//親に選ばれた回数を記録
+	public int mutation_count; //突然変異が起こった回数
 
 
 
@@ -80,22 +58,38 @@ public class Agent implements Cloneable{
 //		Cscore=0;
 		Rscore=0;
 		metaRscore=0;
-		//parents_count=0;
+		parents_count=0;
 		freeride_kizi=0;
 		freeride_comment=0;
-		//mutation_count=0;
+		mutation_count=0;
 
 
+		public static final MAX = 1000;
+
+		//強化学習におけるQ値=記事投稿数、コメント数、行動確率
+		public double[][][] Q = new double[MAX][MAX];
+
+		public int[] act = new int[2];
+		act ={0,0};//行動決定(0→しない、1→する)0で初期化
+
+
+
+		public int learningMax;	//最大学習回数
+		public double gammaRate;//割引率
+		public double learningRate;//学習率
+		public double epsilonRate;//ε
+		public int learningCnt;//学習回数
+		public int nowR;//即時報酬
 
 		comment_to_who = new ArrayList<Double>(10000);
 		for (int i = 0; i < 10000; i++) {
 			comment_to_who.add(0.0);
 		}
 
-		//parents = new ArrayList<Double>(10000);
-		//for (int i = 0; i < 10000; i++) {
-		//	parents.add(0.0);
-		//}
+		parents = new ArrayList<Double>(10000);
+		for (int i = 0; i < 10000; i++) {
+			parents.add(0.0);
+		}
 
 		Bi.SetRamdom(random);
 		V.SetRamdom(random);
@@ -111,6 +105,8 @@ public class Agent implements Cloneable{
 		LDrate=1.0;
 		LCrate=1.0;
 		Brate=1.0;
+
+		setQ();
 	}
 	public double getBoldness(){
 		return 1-getPosting();
@@ -219,95 +215,47 @@ public class Agent implements Cloneable{
 		return r;
 	}
 
-// 	public void mutation(){
+	public void mutation(){
+		Qlearning(1);
+	}
 
-// 		//大阪さん　突然変異0.005
+	public void evolution(Agent father,Agent mother){
+		if(fixmode)return;
+		Agent.CopyParam(this,Agent.UniformCrossover(father,mother));
+	}
 
-// 		 for (int i = 0; i < length; i++) {
-// 		         if(random.nextDouble()<=0.005){
-// 		                 Bi.Set(i, !Bi.Value(i));
-// 		                 mutation_count+=1;
-// 		         }
-// 		         if(random.nextDouble()<=0.005){
-// 						 V.Set(i, !V.Value(i));
-// //					 mutation_count++;
-// 			 }
-// 		         if(random.nextDouble()<=0.005){
-// 		                 L.Set(i, !L.Value(i));
-// 					 mutation_count+=10;
-// 		         }
-// 		 }
-
-		//平原さん　突然変異0.01
-//		for (int i = 0; i < length; i++) {
-//			if(random.nextDouble()<=0.01){
-//				Bi.Set(i, !Bi.Value(i));
-//			}
-//			if(random.nextDouble()<=0.01){
-//				V.Set(i, !V.Value(i));
-//			}
-//			if(random.nextDouble()<=0.01){
-//				L.Set(i, !L.Value(i));
-//			}
-//		}
-/*
-		if(random.nextInt(100)<=2){
-			int i=random.nextInt(8);
-			if(i/3==0){
-				Bi.Set(i%3, !Bi.Value(i%3));
-			}else if(i/3==1){
-				V.Set(i%3, !V.Value(i%3));
-			}else{
-				L.Set(i%3, !L.Value(i%3));
+	//一葉交差
+	static private Agent UniformCrossover(Agent father,Agent mother){
+		Agent child=father.clone();
+		for (int i = 0; i < length; i++) {
+			if(child.random.nextBoolean()){
+				child.Bi.Set(i, mother.Bi.Value(i));
+			}
+			if(child.random.nextBoolean()){
+				child.V.Set(i, mother.V.Value(i));
+			}
+			if(child.random.nextBoolean()){
+				child.L.Set(i, mother.L.Value(i));
 			}
 		}
-*/
-
-		//全てのビットをランダムに設定する
-//		for (int i = 0; i < length; i++) {
-//
-//			if(random.nextDouble()<=0.005){
-//		                 Bi.Set(i, !Bi.Value(i));
-//		                 mutation_count+=1;
-//			}
-//
-//			V.Set(i, random.nextBoolean());
-//			L.Set(i, random.nextBoolean());
-//
-//
-//
-//		}
-
-
-	// }
-
-	// public void evolution(Agent father,Agent mother){
-	// 	if(fixmode)return;
-	// 	Agent.CopyParam(this,Agent.UniformCrossover(father,mother));
-	// }
-
-	// //一葉交差
-	// static private Agent UniformCrossover(Agent father,Agent mother){
-	// 	Agent child=father.clone();
-	// 	for (int i = 0; i < length; i++) {
-	// 		if(child.random.nextBoolean()){
-	// 			child.Bi.Set(i, mother.Bi.Value(i));
-	// 		}
-	// 		if(child.random.nextBoolean()){
-	// 			child.V.Set(i, mother.V.Value(i));
-	// 		}
-	// 		if(child.random.nextBoolean()){
-	// 			child.L.Set(i, mother.L.Value(i));
-	// 		}
-	// 	}
-	// 	return child;
-	// }
+		return child;
+	}
 	//パラメータコピー
-	//static public void CopyParam(Agent agent,Agent copyorigin){
-	//	agent.Bi=copyorigin.Bi.clone();
-	//	agent.V=copyorigin.V.clone();
-	//	agent.L=copyorigin.L.clone();
-	//}
+	static public void CopyParam(Agent agent,Agent copyorigin){
+		agent.Bi=copyorigin.Bi.clone();
+		agent.V=copyorigin.V.clone();
+		agent.L=copyorigin.L.clone();
+	}
+
+	//リストソート用
+	static public class AgentComparator implements Comparator<Agent> {
+		public int compare(Agent p1, Agent p2) {
+			if(p1.score==p2.score)return 0;
+			return  (p2.score >p1.score)?1:-1;
+		}
+
+	}
+
 
 	public setQ(double gr, double lr, double er){
 
@@ -322,17 +270,16 @@ public class Agent implements Cloneable{
 	void initializeQ(){
 		for (int i=0;i<MAX;i++)
 			for (int j=0;j<MAX;j++)
-				for (int k=0;k<MAX;k++)
-						Q[i][j][k]=1;//今後Q=a*i+b*j+c*kのようにしてQ値を初期化する？//ノート記載の更新式
+						Q[i][j]=1;//今後Q=a*i+b*j+c*kのようにしてQ値を初期化する？//ノート記載の更新式
 	}
 
 	//Q学習
-	int Qlearning(int num){
+	void Qlearning(int num){
 
-		learningCnt = 0;
 		learningMax = num;//回数指定
 		int[] act=new int[2];
 		int[] max_act=new int[2];
+		int kizi2,comment2;
 
 		double maxNextQ;
 
@@ -342,23 +289,21 @@ public class Agent implements Cloneable{
 			//ε-greedy法で更新したい
 			act = epsGreedy();
 
-			kizi += act[0];
-			comment += act[1];
+			kizi2 = kizi+act[0];
+			comment2 = comment+act[1];
 
 			nowR =score;//即時報酬＝メタ報酬ゲームでの報酬
 
 			
 			max_act=getMaxQact(kizi,comment);//Q値が最大となる行動
-			maxNextQ =Q[kizi+max_act[0]][comment+max_act[1]][receive_comment];//移動後のQ値の最大値を計算
+			maxNextQ =Q[kizi2+max_act[0]][comment2+max_act[1]];//移動後のQ値の最大値を計算
 
 			//Q値の更新
-			Q[kizi][comment][receive_comment] =
-					(1-learningRate) * Q[kizi][comment][receive_comment]  + learningRate * (nowR+gammaRate*maxNextQ);
+			Q[kizi][comment]=
+					(1-learningRate) * Q[kizi][comment]  + learningRate * (nowR+gammaRate*maxNextQ);
 
-			learningCnt++;
-
-		//学習回数を返す
-		return learningCnt;
+		
+		return ;
 	}
 
 	//ε-greedy
@@ -367,53 +312,81 @@ public class Agent implements Cloneable{
 		double rate = rand.nextDouble();
 
 		if(rate < epsilonRate){	//ランダム
-			actD = ｛random(70),random(70)};//記事投稿率、コメント投稿率ともに70%で設定
+			random();//記事投稿率、コメント投稿率ともに70%で設定//完全ランダム？
 		} else {				
-			actD = getMaxQact(kizi, comment);//Q値が最大となる行動
+			getMaxQact();//Q値が最大となる行動
 		}
 		return actD;
 	}
 
-	int[] getMaxQact(int x,int y){//最大の値を得られる行動を探索
+	void getMaxQact(int x,int y){//最大の値を得られる行動を探索
 		int act1=0;
 		int act2=0;
 		int[] max_act=new int[2];
 
-		double max = Q[kizi][comment][receive_comment];
+		double max = Q[kizi][comment];
 		for(int i=0; i<2; i++){
-			if(max < Q[kizi+i][comment][receive_comment]){
-				max = Q[kizi+i][comment][receive_comment];
+			if(max < Q[kizi+i][comment]){
+				max = Q[kizi+i][comment];
 				act1 = i;
 			}
 		}
 
 		for(int j=0; j<2; j++){
-			if(max < Q[kizi+act1][comment+j][receive_comment]){
-				max = Q[kizi+act1][comment+j][receive_comment];
+			if(max < Q[kizi+act1][comment+j]){
+				max = Q[kizi+act1][comment+j];
 				act2 = j;
 			}
 		}
+
+		Bi.setR(act1);
+		V.setR(act2);
+		L.setR(act2);
 
 		max_act = {act1,act2};
 
 		return  max_act;
 	}
 
-	int random(int n){//行動確率の実現
-		int ran = rand.nextInt(100)+1;
-		if(ran<=n) return 1;
-		else return 0;
-	}
+	void random(){//行動確率の実現
 
+		int[] b,v,l;
+		b = new int[3];
+		v = new int[3];
+		l = new int[3];
 
-	//リストソート用
-	static public class AgentComparator implements Comparator<Agent> {
-		public int compare(Agent p1, Agent p2) {
-			if(p1.score==p2.score)return 0;
-			return  (p2.score >p1.score)?1:-1;
+		for(int i=0;i<3;i++){
+			b[i]=random.nextInt(2);
+			v[i]=random.nextInt(2);
+			l[i]=random.nextInt(2);
 		}
 
+		for(int i=0;i<3;i++){
+			if(b[i]==0){
+				Bi.Set(i, false);
+			}else if(b[i]==1){
+				Bi.Set(i, true);
+			}
+		}
+
+		for(int i=0;i<3;i++){
+			if(v[i]==0){
+				V.Set(i, false);
+			}else if(v[i]==1){
+				V.Set(i, true);
+			}
+		}
+
+		for(int i=0;i<3;i++){
+			if(l[i]==0){
+				L.Set(i, false);
+			}else if(l[i]==1){
+				L.Set(i, true);
+			}
+		}		
 	}
+
+}
 
 
 
