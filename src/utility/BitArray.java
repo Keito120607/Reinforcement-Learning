@@ -50,6 +50,30 @@ public class BitArray implements Cloneable{
       cache=-1;
   }
 
+  public void SetR(int num) {
+
+      if(num ==1){
+        for(int i =0;i<3;i++){
+          if (data[i]=false){
+            data[i]=true;
+            break;
+          }else{
+            data[i]=false;
+          }
+      }
+
+      if(num ==0){
+        for(int i =0;i<3;i++){
+          if (data[i]=true){
+            data[i]=false;
+            break;
+          }else{
+            data[i]=true;
+          }
+      }
+
+  }
+
   ///* 取得 */
   public boolean Value(int index) {
 	  //boolean tmp=(bitNote[index / BITLEN] >> index % BITLEN & 1) == 1;
