@@ -2,14 +2,15 @@ package network;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Random;
 
 import utility.BitArray;
 import utility.MyRandom;
 
 public class Agent implements Cloneable{
-	private BitArray Bi;//大胆さ 裏切りやすさ
-	private BitArray V;//裏切り者を懲罰する確率
-	private BitArray L;//協調を褒賞する確率
+	private static BitArray Bi;//大胆さ 裏切りやすさ
+	private static BitArray V;//裏切り者を懲罰する確率
+	private static BitArray L;//協調を褒賞する確率
 	public double score;
 
 	//logスケール用score記憶 2016/11/08
@@ -19,8 +20,8 @@ public class Agent implements Cloneable{
 	public double Rscore;
 	public double metaRscore;
 
-	public double kizi;	//記事投稿回数を記録
-	public double comment;//コメント回数を記録
+	public static int kizi;	//記事投稿回数を記録
+	public static int comment;//コメント回数を記録
 	public double read_kizi;//4ラウンドでいくつの記事を読んだか
 	public double recieve_comment;//4ラウンドでいくつのコメントを貰ったか
 	public ArrayList<Double> comment_to_who; //ある相手に何回コメントを行ったかを記録
@@ -32,6 +33,20 @@ public class Agent implements Cloneable{
 
 	public double parents_count;	//親に選ばれた回数を記録
 	public int mutation_count; //突然変異が起こった回数
+	public static int MAX = 50000;
+
+	//強化学習におけるQ値=記事投稿数、コメント数、行動確率
+	public static double[][] Q = new double[MAX][MAX];
+
+	public int[] act = {0,0};//行動決定(0→しない、1→する)0で初期化
+
+
+	int learningMax;	//最大学習回数
+	double gammaRate;//割引率
+	double learningRate;//学習率
+	static double epsilonRate;//ε
+	int learningCnt;//学習回数
+	double nowR;//即時報酬
 
 
 
@@ -64,23 +79,6 @@ public class Agent implements Cloneable{
 		mutation_count=0;
 
 
-		public static final MAX = 1000;
-
-		//強化学習におけるQ値=記事投稿数、コメント数、行動確率
-		public double[][][] Q = new double[MAX][MAX];
-
-		public int[] act = new int[2];
-		act ={0,0};//行動決定(0→しない、1→する)0で初期化
-
-
-
-		public int learningMax;	//最大学習回数
-		public double gammaRate;//割引率
-		public double learningRate;//学習率
-		public double epsilonRate;//ε
-		public int learningCnt;//学習回数
-		public int nowR;//即時報酬
-
 		comment_to_who = new ArrayList<Double>(10000);
 		for (int i = 0; i < 10000; i++) {
 			comment_to_who.add(0.0);
@@ -106,7 +104,7 @@ public class Agent implements Cloneable{
 		LCrate=1.0;
 		Brate=1.0;
 
-		setQ();
+		setQ(0.9,0.5,0.1);
 	}
 	public double getBoldness(){
 		return 1-getPosting();
@@ -257,7 +255,7 @@ public class Agent implements Cloneable{
 	}
 
 
-	public setQ(double gr, double lr, double er){
+	public void setQ(double gr, double lr, double er){
 
 		this.gammaRate = gr;
 		this.learningRate = lr;
@@ -295,31 +293,32 @@ public class Agent implements Cloneable{
 			nowR =score;//即時報酬＝メタ報酬ゲームでの報酬
 
 			
-			max_act=getMaxQact(kizi,comment);//Q値が最大となる行動
+			max_act=getMaxQact(kizi2,comment2);//Q値が最大となる行動
 			maxNextQ =Q[kizi2+max_act[0]][comment2+max_act[1]];//移動後のQ値の最大値を計算
 
 			//Q値の更新
 			Q[kizi][comment]=
 					(1-learningRate) * Q[kizi][comment]  + learningRate * (nowR+gammaRate*maxNextQ);
 
-		
-		return ;
+			}
+
 	}
 
 	//ε-greedy
-	int epsGreedy(){
+	private static int[] epsGreedy(){
 		int[] actD= new int[2];
+		Random rand = new Random();
 		double rate = rand.nextDouble();
 
 		if(rate < epsilonRate){	//ランダム
 			random();//記事投稿率、コメント投稿率ともに70%で設定//完全ランダム？
 		} else {				
-			getMaxQact();//Q値が最大となる行動
+			getMaxQact(kizi,comment);//Q値が最大となる行動
 		}
 		return actD;
 	}
 
-	void getMaxQact(int x,int y){//最大の値を得られる行動を探索
+	private static int[] getMaxQact(int kizi,int comment){//最大の値を得られる行動を探索
 		int act1=0;
 		int act2=0;
 		int[] max_act=new int[2];
@@ -339,26 +338,28 @@ public class Agent implements Cloneable{
 			}
 		}
 
-		Bi.setR(act1);
-		V.setR(act2);
-		L.setR(act2);
+		Bi.SetR(act1);
+		V.SetR(act2);
+		L.SetR(act2);
 
-		max_act = {act1,act2};
+		max_act[0] = act1;
+		max_act[1] = act2;
 
 		return  max_act;
 	}
 
-	void random(){//行動確率の実現
+	private static void random(){//行動確率の実現
 
 		int[] b,v,l;
 		b = new int[3];
 		v = new int[3];
 		l = new int[3];
+		Random rand = new Random();
 
 		for(int i=0;i<3;i++){
-			b[i]=random.nextInt(2);
-			v[i]=random.nextInt(2);
-			l[i]=random.nextInt(2);
+			b[i]=rand.nextInt(2);
+			v[i]=rand.nextInt(2);
+			l[i]=rand.nextInt(2);
 		}
 
 		for(int i=0;i<3;i++){
@@ -390,4 +391,3 @@ public class Agent implements Cloneable{
 
 
 
-}
