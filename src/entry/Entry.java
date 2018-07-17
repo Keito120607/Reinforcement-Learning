@@ -1,7 +1,6 @@
 package entry;
 
 
-import org.example.Example03;
 import socialmedia.gameEnv.executors.*;
 //import socialmedia.gameEnv.networkCgtR.NetworkGameExp;
 
@@ -40,12 +39,12 @@ public class Entry {
 //		paramtest();
 
 //		(new WSgameChangeU()).start();
-//		(new WSgameFocusOne()).start();		//WSモデルにおけるゲーム。張り替え確率pを固定。
-//		(new CNNgameFocusOne()).start();	//CNNモデルにおけるゲーム。
-//		(new BAgameFocusOne()).start();		//BAモデルにおけるゲーム。
-		(new GameIn20Comp()).start();        //エージェント数20人による完全グラフ
-//		(new GameInSNAP()).start();			//FaceBookネットワークで行うゲーム。
-//		(new GameInRandom()).start();		//ランダムグラフ(ERモデル)におけるゲーム
+//		(new WSgameFocusOne()).start();	
+//		(new CNNgameFocusOne()).start();	
+//		(new BAgameFocusOne()).start();		
+//		(new GameIn20Comp()).start();       
+//		(new GameInSNAP()).start();			
+		(new GameInRandom()).start();		
 //		(new ReciprocityEnv()).start();
 //			NetworkInfo ins= NetworkInfoFactory.importFile( "statics/facebook_combined.txt");
 //		ResultLogger a=new ResultLogger("SNAP-networks");
