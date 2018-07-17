@@ -60,6 +60,7 @@ public class BitArray implements Cloneable{
           }else{
             data[i]=false;
           }
+        }
       }
 
       if(num ==0){
@@ -71,6 +72,7 @@ public class BitArray implements Cloneable{
             data[i]=true;
           }
       }
+    }
 
   }
 
